@@ -12,27 +12,20 @@ import com.library.update.data.ApkFile
 import com.library.update.data.UpdateEntity
 import java.lang.Exception
 
-class UpdateManager {
+class UpdateManager(private var context: Context, private var updateConfig: UpdateConfig) {
 
-    private var context: Context? = null
-    private var updateConfig: UpdateConfig? = null
-
-    fun start(context: Context, config: UpdateConfig) {
-        this.context = context
-        this.updateConfig = config
-        val updateEntity = config.updateEntity
-        if (needUpdate(updateEntity)) {
-            alterDialog(updateEntity)
-        }
+    fun start() {
+        if (needUpdate()) alterDialog()
     }
 
-    private fun alterDialog(updateEntity: UpdateEntity) {
-        AlertDialog.Builder(context!!)
+    private fun alterDialog() {
+        var updateEntity = updateConfig.updateEntity
+        AlertDialog.Builder(context)
                 .setTitle("有新版本：${updateEntity.versionName}")
                 .setMessage("本次更新内容：${updateEntity.updateDesc}")
                 .setCancelable(false)
                 .setPositiveButton("立即更新") { _, _ -> download(updateEntity) }
-                .setNegativeButton("以后再说") { dialog, _ -> dialog!!.dismiss() }
+                .setNegativeButton("以后再说") { dialog, _ -> dialog.dismiss() }
                 .show()
     }
 
@@ -62,25 +55,22 @@ class UpdateManager {
             }
         }
         try {
-            var file = updateConfig!!.apkFile.file
+            var file = updateConfig.apkFile.file
             DownloadAsyncTask(listener, file).execute(updateEntity.apkUrl)
         } catch (e: Exception) {
             listener.error()
         }
     }
 
-    private fun needUpdate(updateEntity: UpdateEntity): Boolean {
-        context?.let {
-            val packageInfo = it.packageManager.getPackageInfo(it.packageName, 0)
-            val versionCode = packageInfo.versionCode
-            return updateEntity.versionCode > versionCode
-        }
-        return false
+    private fun needUpdate(): Boolean {
+        val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+        val versionCode = packageInfo.versionCode
+        return updateConfig.updateEntity.versionCode > versionCode
     }
 
     private fun installApk() {
         var type = "application/vnd.android.package-archive"
-        var (file, uri) = updateConfig?.apkFile!!
+        var (file, uri) = updateConfig.apkFile
         val intent = Intent(Intent.ACTION_VIEW)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -89,7 +79,7 @@ class UpdateManager {
             intent.setDataAndType(Uri.fromFile(file), type)
         }
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context?.startActivity(intent)
+        context.startActivity(intent)
     }
 
 

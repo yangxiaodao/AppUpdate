@@ -20,12 +20,13 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
 
         fab.setOnClickListener { _ ->
-            UpdateManager().start(
+            UpdateManager(
                     this@MainActivity,
                     object : UpdateManager.UpdateConfig {
                         override val apkFile: ApkFile = getApkFile()
                         override val updateEntity: UpdateEntity = checkNewVersion()
-                    })
+                    }
+            ).start()
         }
     }
 
